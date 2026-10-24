@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  INVITADO
+  ESTUDIANTE
+  DOCENTE
+  ENTRENADOR
+  MODERADOR
+  ADMIN
+}
+
+model User {
+  id               String       @id @default(uuid())
+  email            String       @unique
+  passwordHash     String       @map("password_hash")
+  isEmailVerified  Boolean      @default(false) @map("is_email_verified")
+  role             Role         @default(ESTUDIANTE)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  profile          UserProfile?
+
+  @@map("users")
+  @@schema("auth_schema")
+}
+
+model UserProfile {
+  userId          String   @id @map("user_id")
+  fullName        String   @map("full_name")
+  academicProgram String?  @map("academic_program")
+  interests       String[] @default([])
+  avatarUrl       String?  @map("avatar_url")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+  @@schema("auth_schema")
+}
