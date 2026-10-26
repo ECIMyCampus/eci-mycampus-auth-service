@@ -2,19 +2,29 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import dotenv from 'dotenv';
+import { authRoutes } from './routes/auth.routes';
 
 dotenv.config();
 
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret && process.env.NODE_ENV === 'production') {
+  console.error('[FATAL] JWT_SECRET es obligatorio en entorno de producción.');
+  process.exit(1);
+}
+
 const server = Fastify({
-  logger: true,
+  logger: {
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  },
 });
 
 server.register(cors, {
-  origin: true,
+  origin: process.env.CORS_ORIGIN || true,
+  credentials: true,
 });
 
 server.register(jwt, {
-  secret: process.env.JWT_SECRET || 'super_secret_jwt_key_for_eci_mycampus_4001',
+  secret: jwtSecret || 'dev_jwt_secret_key_for_eci_mycampus_local_only',
 });
 
 // Health check
@@ -22,14 +32,8 @@ server.get('/health', async () => {
   return { status: 'ok', service: 'auth-service', timestamp: new Date().toISOString() };
 });
 
-// Rutas base de autenticación
-server.post('/api/v1/auth/register', async (request, reply) => {
-  return reply.status(501).send({ message: 'Ruta en implementación - Etapa 4' });
-});
-
-server.post('/api/v1/auth/login', async (request, reply) => {
-  return reply.status(501).send({ message: 'Ruta en implementación - Etapa 4' });
-});
+// Registrar rutas del dominio de autenticación
+server.register(authRoutes, { prefix: '/api/v1/auth' });
 
 const start = async () => {
   try {
